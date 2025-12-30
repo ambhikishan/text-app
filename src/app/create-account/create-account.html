@@ -1,0 +1,38 @@
+<div class="signup-container">
+  <h2>Create Account</h2>
+
+  <form (ngSubmit)="signup()">
+
+    <input 
+      type="text"
+      placeholder="Username"
+      [(ngModel)]="username"
+      name="username"
+      required
+    />
+
+    <input 
+      type="email"
+      placeholder="Email"
+      [(ngModel)]="email"
+      name="email"
+      required
+    />
+
+    <input 
+      type="password"
+      placeholder="Password"
+      [(ngModel)]="password"
+      name="password"
+      required
+    />
+
+    <button type="submit">Sign Up</button>
+
+    <p class="login-text">
+      Already have an account?
+      <a routerLink="/login">Login here</a>
+    </p>
+
+  </form>
+</div>
