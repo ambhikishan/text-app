@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { LoginService } from '../login';
 
 @Component({
   standalone: true,
@@ -16,8 +17,14 @@ export class CreateAccount {
   email = '';
   password = '';
 
+  constructor(private loginService: LoginService,private router: Router) {}
   signup() {
     console.log(this.username, this.email, this.password);
-    // connect backend later
+    this.loginService.signup(this.username,this.email,this.password).subscribe(response => {
+      console.log('Signup successful', response);
+      this.router.navigate(['/login']);
+    }, error => {
+      console.error('Signup failed', error);
+    });
   }
 }
