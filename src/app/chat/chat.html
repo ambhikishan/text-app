@@ -1,1 +1,50 @@
-<p>chat works!</p>
+ <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script> -->
+<div class="app">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">Chats</div>
+
+    <div class="chat-item"
+         *ngFor="let chat of chats"
+         (click)="selectChat(chat)"
+         [class.active]="chat === activeChat">
+
+      <img [src]="chat.avatar">
+      <div class="chat-info">
+        <div class="name">{{ chat.username }}</div>
+        <div class="last">{{ chat.lastMessage }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Window -->
+  <div class="chat-window" *ngIf="activeChat">
+
+    <div class="chat-header">
+      <img [src]="activeChat.avatar">
+      <div class="name">{{ activeChat.username }}</div>
+    </div>
+
+    <div class="chat-body">
+      <div *ngFor="let msg of activeChat.messages"
+           class="msg"
+           [class.me]="msg.sender === 'me'">
+
+        <div class="bubble">
+          {{ msg.text }}
+          <span>{{ msg.time }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-input">
+      <input [(ngModel)]="newMessage"
+             (keydown.enter)="sendMessageToServer(activeChat.username,newMessage)"
+             placeholder="Type a message">
+      <button (click)="sendMessageToServer(activeChat.username,newMessage)">➤</button>
+    </div>
+
+  </div>
+</div>
