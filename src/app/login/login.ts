@@ -22,6 +22,7 @@ login(){
     console.log('Login successful', response);
     const userData: any = response;
     console.log('User Data:', userData.username, userData.email, userData.loggedIn, userData.verified);
+    localStorage.setItem('token', userData.jwtToken);
     App.prototype.setLoggedIn(userData.loggedIn);
     App.prototype.setVerified(userData.verified)
     App.prototype.setUsername(userData.username);
@@ -31,4 +32,6 @@ login(){
     console.error('Login failed', error);
   });
 }
+
+
 }

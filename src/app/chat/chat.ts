@@ -6,6 +6,7 @@ import { Client } from '@stomp/stompjs';
 import { Subject } from 'rxjs';
 import { App } from '../app';
 import {ChangeDetectorRef, NgZone } from '@angular/core';
+import { LoginService } from '../login';
 
 
 interface ChatMessage {
@@ -25,13 +26,32 @@ export class Chat implements OnInit {
   private messages$ = new Subject<any>();
   private client!: Client;
 
-constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef) {}
+constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private loginService: LoginService) {}
 
   ngOnInit(): void {
+    const token = localStorage.getItem('token');
+    console.log('Retrieved token from localStorage:', token);
+    this.loginService.validateToken(token || '').subscribe(response => {
+      console.log('Token validation successful', response);
+      const userData: any = response;
+      App.prototype.setLoggedIn(true);
+      App.prototype.setVerified(userData.verified);
+      App.prototype.setUsername(userData.username);
+      App.prototype.setEmail(userData.email);
+      console.log('Username in chat component: ', App.prototype.getUsername());
+    }, error => {
+      console.error('Token validation failed', error);
+    });
    const socket = new SockJS('http://localhost:8082/ws');
-   console.log('Username in chat component: ', App.prototype.getUsername());
+   
    this.client = new Client({
       webSocketFactory: () => socket,
+      connectHeaders: {
+        Authorization: `Bearer ${token}`
+      },
+      debug: (str) => {
+        console.log(str);
+      },
       reconnectDelay: 5000
     });
     this.client.onConnect = () => {

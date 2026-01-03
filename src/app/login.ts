@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { App } from './app';
 
@@ -37,5 +37,13 @@ export class LoginService {
     const otpData = { email, otp };
     console.log('Sending OTP verification data:', otpData);
     return this.http.post('http://localhost:8080/verify', otpData);
+  }
+
+  validateToken(token: string) {
+
+     const params = new HttpParams().set('token', token);
+    return this.http.post('http://localhost:8080/validate-token', null,{
+      params
+    });
   }
 }
