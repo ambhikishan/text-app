@@ -1,0 +1,27 @@
+<nav class="navbar">
+  <div class="left">
+    <div class="logo">ChatApp</div>
+
+    <div class="search-box">
+      <input 
+        type="text" 
+        placeholder="Search username..."
+        [(ngModel)]="query"
+        (input)="search()"
+      />
+
+      <div class="search-results" *ngIf="results.length">
+        <div *ngFor="let user of results" (click)="openChat(user)">
+          {{ user.username }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="profile">
+      <img [src]="me.photoUrl || 'assets/avatar.png'">
+      <span>{{ username }}</span>
+    </div>
+  </div>
+</nav>

@@ -4,9 +4,10 @@ import { FormsModule } from '@angular/forms';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import { Subject } from 'rxjs';
-import { App } from '../app';
 import {ChangeDetectorRef, NgZone } from '@angular/core';
 import { LoginService } from '../login';
+import { Router } from '@angular/router';
+import { Navbar } from '../navbar/navbar';
 
 
 interface ChatMessage {
@@ -18,7 +19,7 @@ interface ChatMessage {
 
 @Component({
   selector: 'app-whatsapp-chat',
-  imports: [FormsModule,CommonModule],
+  imports: [FormsModule,CommonModule,Navbar],
   templateUrl: './chat.html',
   styleUrls: ['./chat.css']
 })
@@ -26,23 +27,24 @@ export class Chat implements OnInit {
   private messages$ = new Subject<any>();
   private client!: Client;
 
-constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private loginService: LoginService) {}
-
+constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private loginService: LoginService, private router: Router) {}
+ userName! : string ;
   ngOnInit(): void {
     const token = localStorage.getItem('token');
     console.log('Retrieved token from localStorage:', token);
     this.loginService.validateToken(token || '').subscribe(response => {
       console.log('Token validation successful', response);
       const userData: any = response;
-      App.prototype.setLoggedIn(true);
-      App.prototype.setVerified(userData.verified);
-      App.prototype.setUsername(userData.username);
-      App.prototype.setEmail(userData.email);
-      console.log('Username in chat component: ', App.prototype.getUsername());
+    
+
+      this.userName = userData.username;
+      console.log('Username in chat component: ', this.userName);
+      
     }, error => {
       console.error('Token validation failed', error);
+      this.router.navigate(['/login']);
     });
-   const socket = new SockJS('http://localhost:8082/ws');
+   const socket = new SockJS(`http://${window.location.hostname}:8082/ws`);
    
    this.client = new Client({
       webSocketFactory: () => socket,
@@ -55,7 +57,7 @@ constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private login
       reconnectDelay: 5000
     });
     this.client.onConnect = () => {
-      this.client.subscribe('/topic/'+App.prototype.getUsername(), msg => {
+      this.client.subscribe('/topic/'+this.userName, msg => {
         this.messages$.next(JSON.parse(msg.body));
         console.log('Message received: ', msg.body);
         this.ngZone.run(() => {
@@ -70,13 +72,14 @@ constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private login
     };
 
     this.client.activate();
+    
 
   }
   public sendMessageToServer(to: string, message: string) {
     if (this.client && this.client.connected) {
       this.client.publish({
         destination: '/app/sendPersonalMessage',
-        body: JSON.stringify({ from:App.prototype.getUsername(), to: to, message: message })
+        body: JSON.stringify({ from: this.userName, to: to, message: message })
       });
     }
     this.activeChat.messages.push({

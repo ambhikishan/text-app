@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { Login } from "./login/login";
 import { VerifyComponent } from "./verify/verify";
@@ -10,12 +10,18 @@ import { CommonModule } from '@angular/common';
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App {
+export class App implements OnInit {
  private static accountVerified: boolean = false;
  private static isLoggedIn: boolean = false;
  private static username: string = '';
  private static email: string = '';
 
+ constructor(private cdr: ChangeDetectorRef) {
+  
+ }
+ngOnInit(): void {
+this.cdr.detectChanges();
+}
  public getUsername() {
   return App.username;
  }
