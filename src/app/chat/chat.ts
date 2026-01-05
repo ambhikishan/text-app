@@ -24,6 +24,22 @@ interface ChatMessage {
   styleUrls: ['./chat.css']
 })
 export class Chat implements OnInit {
+
+openChat($event: any) {
+  if(this.chats.find(chat => chat.username === $event.username)){
+    this.activeChat = this.chats.find(chat => chat.username === $event.username)!;
+    return;
+  }
+    this.chats.push({
+      username: $event.username,
+      lastMessage: '',
+      avatar: `http://${window.location.hostname}:8080/user/profile/${$event.username}`,
+      messages: []
+    });
+    this.activeChat = this.chats[this.chats.length - 1]; 
+  }
+
+
   private messages$ = new Subject<any>();
   private client!: Client;
 
@@ -39,9 +55,10 @@ constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private login
 
       this.userName = userData.username;
       console.log('Username in chat component: ', this.userName);
-      
+      this.cdr.detectChanges();
     }, error => {
       console.error('Token validation failed', error);
+      localStorage.removeItem('token');
       this.router.navigate(['/login']);
     });
    const socket = new SockJS(`http://${window.location.hostname}:8082/ws`);
@@ -61,11 +78,23 @@ constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private login
         this.messages$.next(JSON.parse(msg.body));
         console.log('Message received: ', msg.body);
         this.ngZone.run(() => {
-        this.activeChat.messages.push({
+   
+
+    if(this.chats.find(chat => chat.username === JSON.parse(msg.body).from)){
+    this.chats.find(chat => chat.username === JSON.parse(msg.body).from)?.messages.push({
       sender: 'other',
-      text: msg.body.slice( msg.body.indexOf('"message":"') + 11, msg.body.lastIndexOf('"') ),
+      text: JSON.parse(msg.body).message,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     });
+    this.chats.find(chat => chat.username === JSON.parse(msg.body).from)!.lastMessage = JSON.parse(msg.body).message;
+    }
+    else{
+      this.chats.push({
+        username: JSON.parse(msg.body).from,
+        lastMessage: JSON.parse(msg.body).message,
+        avatar: '',
+        messages: [{ sender: 'other', text: JSON.parse(msg.body).message, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]
+      });}
         this.cdr.detectChanges();
   });
       });
@@ -93,21 +122,13 @@ constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private login
   }
 
   chats: ChatMessage[] = [
-    {
-      username: 'ishan',
-      lastMessage: 'See you soon',
-      avatar: 'https://i.pravatar.cc/150?img=1',
-      messages: [
-        { sender: 'other', text: 'Hey!', time: '10:20' },
-        { sender: 'me', text: 'Hi 😄', time: '10:21' }
-      ]
-    },
+    
     {
       username: 'ishanambhik',
       lastMessage: 'Thanks!',
-      avatar: 'https://i.pravatar.cc/150?img=5',
+      avatar: `http://${window.location.hostname}:8080/api/user/profile/ishanambhik`,
       messages: [
-        { sender: 'other', text: 'Did you finish?', time: '09:10' }
+        
       ]
     }
   ];

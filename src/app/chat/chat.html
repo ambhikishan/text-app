@@ -1,4 +1,4 @@
- <app-navbar *ngIf="userName" [username]="userName"></app-navbar>
+ <app-navbar *ngIf="userName" [username]="userName" (openSearchResult)="openChat($event)"></app-navbar>
 <div class="app">
 
   <!-- Sidebar -->

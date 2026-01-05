@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, Input, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, OnInit ,Output, EventEmitter} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { App } from '../app';
+import { Router } from '@angular/router';
 
 interface User {
   id: number;
@@ -17,28 +18,43 @@ interface User {
   styleUrl: './navbar.css',
 })
 export class Navbar implements OnInit{
+navigate() {
+this.router.navigate(['/profile']);
+}
+isProfileMenuOpen: boolean = false;
+logout() {
+localStorage.removeItem('token');
+this.router.navigate(['/login']);
+}
  query = '';
+
   results : any= [];
+
+  @Output() openSearchResult = new EventEmitter<any>();
+
   @Input() username! : string ;
+  @Input() photoUrl! : string ;
   me: User = {
     id: 1,
-    username: ''
-    
+    username: '',
+    photoUrl: ''
   };
   
    ngOnInit(): void {
     this.me.username = this.username;
-    
+    this.me.photoUrl = `http://${window.location.hostname}:8080/user/profile/${this.username}`;
     console.log('Navbar initialized for user:', this.username);
 this.cdr.detectChanges();
   }
   ngOnChanges(): void {
     this.me.username = this.username;
+    this.me.photoUrl = this.photoUrl+"?t=" + new Date().getTime(); // Cache buster
     console.log('Navbar input changed, new username:', this.username);
+
     this.cdr.detectChanges();
   }
 
-  constructor(private http: HttpClient,private cdr: ChangeDetectorRef) {}
+  constructor(private http: HttpClient,private cdr: ChangeDetectorRef, private router: Router) {}
  
 
   search() {
@@ -55,6 +71,7 @@ this.cdr.detectChanges();
     console.log('Open chat with', user.username);
     this.results = [];
     this.query = '';
+    this.openSearchResult.emit(user);
   }
  
   }
