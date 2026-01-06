@@ -92,7 +92,7 @@ constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private login
       this.chats.push({
         username: JSON.parse(msg.body).from,
         lastMessage: JSON.parse(msg.body).message,
-        avatar: '',
+        avatar: `http://${window.location.hostname}:8080/user/profile/${JSON.parse(msg.body).from}`,
         messages: [{ sender: 'other', text: JSON.parse(msg.body).message, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]
       });}
         this.cdr.detectChanges();
@@ -123,14 +123,7 @@ constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private login
 
   chats: ChatMessage[] = [
     
-    {
-      username: 'ishanambhik',
-      lastMessage: 'Thanks!',
-      avatar: `http://${window.location.hostname}:8080/api/user/profile/ishanambhik`,
-      messages: [
-        
-      ]
-    }
+    
   ];
 
   activeChat = this.chats[0];

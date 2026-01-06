@@ -18,6 +18,9 @@ interface User {
   styleUrl: './navbar.css',
 })
 export class Navbar implements OnInit{
+navigateToChats() {
+this.router.navigate(['/chats']);
+}
 navigate() {
 this.router.navigate(['/profile']);
 }

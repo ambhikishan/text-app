@@ -140,20 +140,22 @@ ngOnChanges(): void {
       return;
     }
 
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('token');
     const headers = new HttpHeaders({ 'Authorization': `Bearer ${token}` });
     
-    const body = { password: this.newPassword };
+    const body = { password: this.newPassword, confirmPassword: this.confirmPassword };
 
-    this.http.post('http://localhost:8080/user/change-password', body, { headers })
+    this.http.post(`http://${window.location.hostname}:8080/user/profile/change-password`, body, { headers })
       .subscribe({
         next: () => {
           alert("Password changed successfully");
           this.showPasswordForm = false;
           this.newPassword = '';
           this.confirmPassword = '';
+          this.cdr.detectChanges();
         },
-        error: (err) => alert("Error changing password")
+        error: (err) => {alert("Error changing password"); console.log(err);}
+        
       });
   }
 }
