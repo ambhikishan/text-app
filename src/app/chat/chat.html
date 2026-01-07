@@ -37,9 +37,10 @@
         </div>
       </div>
     </div>
-
+    <div class="typing" *ngIf="activeChat.isTyping"><p> {{activeChat.username}} is typing......</p></div>
     <div class="chat-input">
       <input [(ngModel)]="newMessage"
+              (ngModelChange)="onTyping()"
              (keydown.enter)="sendMessageToServer(activeChat.username,newMessage)"
              placeholder="Type a message">
       <button (click)="sendMessageToServer(activeChat.username,newMessage)">➤</button>

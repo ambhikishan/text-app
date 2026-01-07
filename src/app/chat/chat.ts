@@ -3,7 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
-import { Subject } from 'rxjs';
+import { debounceTime, Subject } from 'rxjs';
 import {ChangeDetectorRef, NgZone } from '@angular/core';
 import { LoginService } from '../login';
 import { Router } from '@angular/router';
@@ -15,7 +15,9 @@ interface ChatMessage {
   lastMessage: string;
   avatar: string;
   messages: { sender: 'me' | 'other'; text: string; time: string }[];
+  isTyping: boolean;
 }
+
 
 @Component({
   selector: 'app-whatsapp-chat',
@@ -34,18 +36,25 @@ openChat($event: any) {
       username: $event.username,
       lastMessage: '',
       avatar: `http://${window.location.hostname}:8080/user/profile/${$event.username}`,
-      messages: []
+      messages: [],
+      isTyping: false
     });
     this.activeChat = this.chats[this.chats.length - 1]; 
   }
 
 
   private messages$ = new Subject<any>();
+  private typingSubject = new Subject<void>();
   private client!: Client;
 
 constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private loginService: LoginService, private router: Router) {}
  userName! : string ;
   ngOnInit(): void {
+    this.typingSubject.pipe(
+      debounceTime(500) // Wait for 500ms pause in typing
+    ).subscribe(() => {
+      this.sendTypingSignal();
+    });
     const token = localStorage.getItem('token');
     console.log('Retrieved token from localStorage:', token);
     this.loginService.validateToken(token || '').subscribe(response => {
@@ -78,9 +87,23 @@ constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private login
         this.messages$.next(JSON.parse(msg.body));
         console.log('Message received: ', msg.body);
         this.ngZone.run(() => {
-   
+   const parsedBody = JSON.parse(msg.body);
 
     if(this.chats.find(chat => chat.username === JSON.parse(msg.body).from)){
+      
+      if (parsedBody.message === "#usertyping") {
+        
+        const chat = this.chats.find(c => c.username === parsedBody.from);
+        if (chat) {
+          chat.isTyping = true;
+          this.cdr.detectChanges();
+          setTimeout(() => {
+            chat.isTyping = false;
+            this.cdr.detectChanges();
+          }, 5000);
+          return;
+        }
+      }
     this.chats.find(chat => chat.username === JSON.parse(msg.body).from)?.messages.push({
       sender: 'other',
       text: JSON.parse(msg.body).message,
@@ -89,13 +112,20 @@ constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private login
     this.chats.find(chat => chat.username === JSON.parse(msg.body).from)!.lastMessage = JSON.parse(msg.body).message;
     }
     else{
+      if(JSON.parse(msg.body).message === "#usertyping"){
+        return;
+      }
       this.chats.push({
         username: JSON.parse(msg.body).from,
         lastMessage: JSON.parse(msg.body).message,
         avatar: `http://${window.location.hostname}:8080/user/profile/${JSON.parse(msg.body).from}`,
-        messages: [{ sender: 'other', text: JSON.parse(msg.body).message, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]
-      });}
-        this.cdr.detectChanges();
+        messages: [{ sender: 'other', text: JSON.parse(msg.body).message, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }],
+        isTyping: false
+      });
+    
+  }
+   this.cdr.detectChanges();
+        
   });
       });
     };
@@ -103,6 +133,19 @@ constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private login
     this.client.activate();
     
 
+  }
+  onTyping() {
+    this.typingSubject.next();
+  }
+  sendTypingSignal() {
+    console.log("Calling API: User is typing...");
+    if (this.client && this.client.connected) {
+      this.client.publish({
+        destination: '/app/sendPersonalMessage',
+        body: JSON.stringify({ from: this.userName, to: this.activeChat.username, message: "#usertyping" })
+      });
+    }
+   
   }
   public sendMessageToServer(to: string, message: string) {
     if (this.client && this.client.connected) {
