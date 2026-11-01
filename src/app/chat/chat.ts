@@ -8,6 +8,7 @@ import {ChangeDetectorRef, NgZone } from '@angular/core';
 import { LoginService } from '../login';
 import { Router } from '@angular/router';
 import { Navbar } from '../navbar/navbar';
+import { ChatHistory } from '../chat-history';
 
 
 interface ChatMessage {
@@ -29,6 +30,7 @@ export class Chat implements OnInit {
 
 openChat($event: any) {
   if(this.chats.find(chat => chat.username === $event.username)){
+
     this.activeChat = this.chats.find(chat => chat.username === $event.username)!;
     return;
   }
@@ -40,6 +42,7 @@ openChat($event: any) {
       isTyping: false
     });
     this.activeChat = this.chats[this.chats.length - 1]; 
+    this.fetchTargetUserConversationHistory($event.username);
   }
 
 
@@ -47,7 +50,7 @@ openChat($event: any) {
   private typingSubject = new Subject<void>();
   private client!: Client;
 
-constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private loginService: LoginService, private router: Router) {}
+constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private loginService: LoginService, private router: Router,private chatHistory: ChatHistory) {}
  userName! : string ;
   ngOnInit(): void {
     this.typingSubject.pipe(
@@ -109,7 +112,7 @@ constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private login
       text: JSON.parse(msg.body).message,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     });
-    this.chats.find(chat => chat.username === JSON.parse(msg.body).from)!.lastMessage = JSON.parse(msg.body).message;
+    this.chats.find(chat => chat.username === JSON.parse(msg.body).from)!.lastMessage = JSON.parse(msg.body).message.message.substring(0,25)+"...";
     }
     else{
       if(JSON.parse(msg.body).message === "#usertyping"){
@@ -117,7 +120,7 @@ constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private login
       }
       this.chats.push({
         username: JSON.parse(msg.body).from,
-        lastMessage: JSON.parse(msg.body).message,
+        lastMessage: JSON.parse(msg.body).message.substring(0,25)+"...",
         avatar: `http://${window.location.hostname}:8080/user/profile/${JSON.parse(msg.body).from}`,
         messages: [{ sender: 'other', text: JSON.parse(msg.body).message, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }],
         isTyping: false
@@ -132,8 +135,41 @@ constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private login
 
     this.client.activate();
     
+// this.fetchAllMessagesHistory();//loading the chat history from the database.
 
   }
+
+  fetchAllMessagesHistory()
+  {
+    this.chatHistory.getConversations().subscribe(data=>{
+      console.log(data[0]);
+    });
+  }
+  
+  fetchTargetUserConversationHistory(targetUser:string)
+  {
+    this.chatHistory.getTargetChatHistory(targetUser).subscribe(data=>{
+      for(let i=0;i<data.length;i++)
+      { 
+        if(data[i].to===targetUser)
+        {
+          this.activeChat.messages.push({sender:'me',text:data[i].message,time:'00:00'})
+        }
+        else
+        {
+          this.activeChat.messages.push({sender:'other',text:data[i].message,time:'00:00'})
+        }
+      
+      }
+        if(data[data.length-1].message.length>25)
+      {this.activeChat.lastMessage= data[data.length-1].message.substring(0,25)+'...';}
+        else
+        {this.activeChat.lastMessage= data[data.length-1].message;}
+      this.cdr.detectChanges();
+    });
+  }
+
+
   onTyping() {
     this.typingSubject.next();
   }
@@ -160,7 +196,7 @@ constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private login
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     });
 
-    this.activeChat.lastMessage = this.newMessage;
+    this.activeChat.lastMessage = this.newMessage.substring(0,25)+"...";
     this.newMessage = '';
   }
 
@@ -170,7 +206,7 @@ constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private login
   ];
 
   activeChat = this.chats[0];
-  newMessage = '';
+  newMessage:string = '';
 
   selectChat(chat: ChatMessage) {
     this.activeChat = chat;
@@ -185,7 +221,7 @@ constructor(private ngZone: NgZone, private cdr: ChangeDetectorRef,private login
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     });
 
-    this.activeChat.lastMessage = this.newMessage;
+    this.activeChat.lastMessage = this.newMessage.substring(0,25)+"...";
     this.newMessage = '';
   }
 }
